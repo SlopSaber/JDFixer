@@ -1,4 +1,3 @@
-﻿using CustomCampaigns.Campaign.Missions;
 using JDFixer.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -38,14 +37,7 @@ namespace JDFixer.Managers
             levelDetail.didChangeDifficultyBeatmapEvent += LevelDetail_didChangeDifficultyBeatmapEvent;
             levelDetail.didChangeContentEvent += LevelDetail_didChangeContentEvent;
 
-            if (Plugin.CheckForCustomCampaigns())
-            {
-                missionSelection.didSelectMissionLevelEvent += MissionSelection_didSelectMissionLevelEvent_CC;
-            }
-            else
-            {
-                missionSelection.didSelectMissionLevelEvent += MissionSelection_didSelectMissionLevelEvent_Base;
-            }
+            missionSelection.didSelectMissionLevelEvent += MissionSelection_didSelectMissionLevelEvent_Base;
 
             mainMenu.didDeactivateEvent += MainMenu_didDeactivateEvent; ;
         }
@@ -58,7 +50,6 @@ namespace JDFixer.Managers
             levelDetail.didChangeDifficultyBeatmapEvent -= LevelDetail_didChangeDifficultyBeatmapEvent;
             levelDetail.didChangeContentEvent -= LevelDetail_didChangeContentEvent;
 
-            missionSelection.didSelectMissionLevelEvent -= MissionSelection_didSelectMissionLevelEvent_CC;
             missionSelection.didSelectMissionLevelEvent -= MissionSelection_didSelectMissionLevelEvent_Base;
 
             mainMenu.didDeactivateEvent -= MainMenu_didDeactivateEvent;
@@ -86,43 +77,6 @@ namespace JDFixer.Managers
                 //Plugin.Log.Debug("Offset: " + arg1.selectedDifficultyBeatmap.noteJumpStartBeatOffset);
 
                 DiffcultyBeatmapUpdated(arg1.beatmapKey, arg1.beatmapLevel); //selectedDifficultyBeatmap);
-            }
-        }
-
-
-        private void MissionSelection_didSelectMissionLevelEvent_CC(MissionSelectionMapViewController arg1, MissionNode arg2)
-        {
-            // Yes, we must check for both arg2.missionData and arg2.missionData.beatmapCharacteristic:
-            // If a map is not dled, missionID and beatmapDifficulty will be correct, but beatmapCharacteristic will be null
-            // Accessing any null values of arg1 or arg2 will crash CC horribly
-
-            if (arg2.missionData != null && arg2.missionData.beatmapCharacteristic != null)
-            {
-                Plugin.Log.Debug("In CC, MissionNode exists");
-
-                //Plugin.Log.Debug("MissionNode - missionid: " + arg2.missionId); //"<color=#0a92ea>[STND]</color> Holdin' Oneb28Easy-1"
-                //Plugin.Log.Debug("MissionNode - difficulty: " + arg2.missionData.beatmapDifficulty); // "Easy" etc
-                //Plugin.Log.Debug("MissionNode - characteristic: " + arg2.missionData.beatmapCharacteristic.serializedName); //"Standard" etc
-
-                if (MissionSelectionPatch.cc_level != null) // lol null check just to print?
-                {
-                    // If a map is not dled, this will be the previous selected node's map
-                    Plugin.Log.Debug("CC Level: " + MissionSelectionPatch.cc_level.levelID);  // For cross check with arg2.missionId
-
-                    if (arg2.missionData is CustomMissionDataSO)
-                    {
-                        BeatmapLevel beatmapLevel = (arg2.missionData as CustomMissionDataSO).beatmapLevel;
-
-                        if (beatmapLevel != null) // lol null check just to print?
-                        {
-                            DiffcultyBeatmapUpdated(arg2.missionData.beatmapKey, beatmapLevel);
-                        }
-                    }
-                }
-            }
-            else // Map not dled
-            {
-                DiffcultyBeatmapUpdated(new BeatmapKey(), null);
             }
         }
 

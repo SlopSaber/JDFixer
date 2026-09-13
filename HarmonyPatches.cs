@@ -170,7 +170,7 @@ namespace JDFixer
         private static MethodBase TargetMethod()
         {
             return AccessTools.FirstMethod(
-                typeof(StandardLevelScenesTransitionSetupDataSO),
+                typeof(StandardLevelScenesTransitionSetupData),
                 m => m.Name == "Init" &&
                      m.GetParameters().Length == 18 
             );
@@ -186,8 +186,8 @@ namespace JDFixer
     }
 
 
-    [HarmonyPatch(typeof(MultiplayerLevelScenesTransitionSetupDataSO), "Init")]
-    internal class MultiplayerLevelScenesTransitionSetupDataSOPatch
+    [HarmonyPatch(typeof(MultiplayerLevelScenesTransitionSetupData), "Init")]
+    internal class MultiplayerLevelScenesTransitionSetupDataPatch
     {
         internal static void Postfix(GameplayModifiers gameplayModifiers)
         {

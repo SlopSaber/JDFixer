@@ -14,7 +14,7 @@ namespace JDFixer.UI
 
 
         [UIComponent("njs_slider")]
-        private SliderSetting NJS_Slider;
+        private SliderSetting NJS_Slider { get; set; }
 
         private float New_NJS_Value = 16f;
 
@@ -40,7 +40,7 @@ namespace JDFixer.UI
         private float Max_RT_Slider => PluginConfig.Instance.maxReactionTime;
 
         [UIComponent("rt_slider")]
-        private SliderSetting RT_Slider;
+        private SliderSetting RT_Slider { get; set; }
 
         private float New_RT_Value = 500f;
 
@@ -64,7 +64,7 @@ namespace JDFixer.UI
 
 
         [UIComponent("pref_list")]
-        private CustomListTableData Pref_List;
+        private CustomListTableData Pref_List { get; set; }
         private RTPref Selected_Pref = null;
 
         [UIAction("select_pref")]

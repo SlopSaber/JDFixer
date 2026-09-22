@@ -14,7 +14,7 @@ namespace JDFixer.UI
 
 
         [UIComponent("njs_slider")]
-        private SliderSetting NJS_Slider;
+        private SliderSetting NJS_Slider { get; set; }
 
         private float New_NJS_Value = 16f;
 
@@ -40,7 +40,7 @@ namespace JDFixer.UI
         private float Max_JD_Slider => PluginConfig.Instance.maxJumpDistance;
 
         [UIComponent("jd_slider")]
-        private SliderSetting JD_Slider;
+        private SliderSetting JD_Slider { get; set; }
 
         private float New_JD_Value = 18f;
 
@@ -61,7 +61,7 @@ namespace JDFixer.UI
 
 
         [UIComponent("pref_list")]
-        private CustomListTableData Pref_List;
+        private CustomListTableData Pref_List { get; set; }
         private JDPref Selected_Pref = null;
 
 

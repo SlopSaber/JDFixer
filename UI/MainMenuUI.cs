@@ -88,7 +88,7 @@ namespace JDFixer.UI
 
 
         [UIComponent("offset_fraction_slider")]
-        private SliderSetting Offset_Fraction_Slider;
+        private SliderSetting Offset_Fraction_Slider { get; set; }
 
         [UIValue("offset_fraction_value")]
         private float Offset_Fraction_Value
@@ -107,7 +107,7 @@ namespace JDFixer.UI
 
 
         [UIComponent("lower_threshold_slider")]
-        private SliderSetting Lower_Threshold_Slider;
+        private SliderSetting Lower_Threshold_Slider { get; set; }
 
         [UIValue("lower_threshold_value")]
         private float Lower_Threshold_Value
@@ -126,7 +126,7 @@ namespace JDFixer.UI
 
 
         [UIComponent("upper_threshold_slider")]
-        private SliderSetting Upper_Threshold_Slider;
+        private SliderSetting Upper_Threshold_Slider { get; set; }
 
         [UIValue("upper_threshold_value")]
         private float Upper_Threshold_Value
@@ -144,11 +144,11 @@ namespace JDFixer.UI
         }
 
         [UIValue("press_ok_text_1")]
-        private string Press_Ok_Text_1 = "<#ffffffff>Press OK to apply settings  <#ff0080ff>♡";
+        private string Press_Ok_Text_1 => "<#ffffffff>Press OK to apply settings  <#ff0080ff>♡";
         [UIValue("press_ok_text_2")]
-        private string Press_Ok_Text_2 = "<size=70%><#ff0080ff>v7.4.0 by Zephyr9125";
+        private string Press_Ok_Text_2 => "<size=70%><#ff0080ff>v7.4.0 by Zephyr9125";
         [UIValue("press_ok_hint_2")]
-        private string Press_Ok_Hint_2 = "";
+        private string Press_Ok_Hint_2 => "";
     }
 
     internal enum SongSpeedEnum

@@ -122,7 +122,7 @@ namespace JDFixer.UI
         private float Max_JD_Slider => _selectedBeatmap.MaxJDSlider; //PluginConfig.Instance.maxJumpDistance;
 
         [UIComponent("jd_slider")]
-        private SliderSetting JD_Slider;
+        private SliderSetting JD_Slider { get; set; }
 
         [UIValue("jd_value")]
         private float JD_Value
@@ -213,7 +213,7 @@ namespace JDFixer.UI
         //=============================================================
 
         [UIComponent("rt_slider")]
-        private SliderSetting RT_Slider;
+        private SliderSetting RT_Slider { get; set; }
 
         [UIValue("rt_value")]
         private float RT_Value
@@ -560,7 +560,7 @@ namespace JDFixer.UI
         private string Open_Donate_Hint => Donate.donate_clickable_hint;
 
         [UIParams]
-        private BSMLParserParams parserParams;
+        private BSMLParserParams parserParams { get; set; }
 
         [UIAction("open_donate_modal")]
         private void Open_Donate_Modal()

@@ -6,6 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{525BE9DC-73E5-41A1-A619-ED09C21C562A}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <BSMTProjectType>BSIPA</BSMTProjectType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>JDFixer</RootNamespace>
     <AssemblyName>JDFixer</AssemblyName>

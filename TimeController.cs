@@ -14,6 +14,7 @@ namespace JDFixer
         private static Canvas canvas;
         private static TextMeshProUGUI text;
         private static bool text_shown;
+        private bool fadeOutStarted;
         private static TimeTweeningManager tween = null;
         private static bool earthday = false;
 
@@ -24,6 +25,7 @@ namespace JDFixer
             length = audioTime.songEndTime;
 
             text_shown = false;
+            fadeOutStarted = false;
             tween = timeTweeningManager;
         }
 
@@ -59,9 +61,10 @@ namespace JDFixer
                 tween.AddTween(new FloatTween(0, 1, value => text.alpha = value, 3.5f, EaseType.InCubic), text);
                 text_shown = true;
             }
-            else if (!earthday && text.gameObject.activeSelf && audioTime.songTime >= 0.5 * length)
+            else if (!earthday && !fadeOutStarted && text.gameObject.activeSelf && audioTime.songTime >= 0.5 * length)
             {
                 //text.CrossFadeAlpha(0f, -3.5f, false); // This doesnt work
+                fadeOutStarted = true;
                 tween.AddTween(new FloatTween(1, 0, value => text.alpha = value, 3.5f, EaseType.InCubic), text);
             }
         }

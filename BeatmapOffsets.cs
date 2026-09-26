@@ -4,6 +4,7 @@ namespace JDFixer
 {
     internal static class BeatmapOffsets
     {
+        private const int MaxSnapPointsPerDirection = 2048;
         internal static List<float> JD_Snap_Points = new List<float>();
         internal static List<float> RT_Snap_Points = new List<float>();
 
@@ -28,27 +29,30 @@ namespace JDFixer
             Offset_Points.Clear();
             Offset_Points.Add("( 0, " + _selectedBeatmap_Offset.ToString("0.##") + " )");
 
-            float point = _selectedBeatmap_JD_RT + _selectedBeatmap_UnitOffset;
-            int multiple = 1;
-            while (point <= _selectedBeatmap_MaxSlider)
+            if (_selectedBeatmap_UnitOffset <= 0f || float.IsNaN(_selectedBeatmap_UnitOffset) || float.IsInfinity(_selectedBeatmap_UnitOffset))
+                return;
+
+            for (int multiple = 1; multiple <= MaxSnapPointsPerDirection; multiple++)
             {
+                float point = _selectedBeatmap_JD_RT + multiple * _selectedBeatmap_UnitOffset;
+                if (point > _selectedBeatmap_MaxSlider || point == Snap_Points[Snap_Points.Count - 1]) break;
                 Snap_Points.Add(point);
-                point += _selectedBeatmap_UnitOffset;
-
                 Offset_Points.Add("( " + multiple + "/" + PluginConfig.Instance.offset_fraction + ", " + (_selectedBeatmap_Offset + multiple / PluginConfig.Instance.offset_fraction).ToString("0.##") + " )");
-                multiple += 1;
             }
 
-            point = _selectedBeatmap_JD_RT - _selectedBeatmap_UnitOffset;
-            multiple = -1;
-            while (point >= _selectedBeatmap_MinSlider)
+            var lowerPoints = new List<float>();
+            var lowerOffsets = new List<string>();
+            for (int multiple = -1; multiple >= -MaxSnapPointsPerDirection; multiple--)
             {
-                Snap_Points.Insert(0, point);
-                point -= _selectedBeatmap_UnitOffset;
-
-                Offset_Points.Insert(0, "( " + multiple + "/" + PluginConfig.Instance.offset_fraction + ", " + (_selectedBeatmap_Offset + multiple / PluginConfig.Instance.offset_fraction).ToString("0.##") + " )");
-                multiple -= 1;
+                float point = _selectedBeatmap_JD_RT + multiple * _selectedBeatmap_UnitOffset;
+                if (point < _selectedBeatmap_MinSlider || (lowerPoints.Count == 0 ? point == _selectedBeatmap_JD_RT : point == lowerPoints[lowerPoints.Count - 1])) break;
+                lowerPoints.Add(point);
+                lowerOffsets.Add("( " + multiple + "/" + PluginConfig.Instance.offset_fraction + ", " + (_selectedBeatmap_Offset + multiple / PluginConfig.Instance.offset_fraction).ToString("0.##") + " )");
             }
+            lowerPoints.Reverse();
+            lowerOffsets.Reverse();
+            Snap_Points.InsertRange(0, lowerPoints);
+            Offset_Points.InsertRange(0, lowerOffsets);
 
             // Debug:
             /*for (int i = 0; i < Snap_Points.Count; i++)

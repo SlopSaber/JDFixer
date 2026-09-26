@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace JDFixer.UI
@@ -15,12 +16,29 @@ namespace JDFixer.UI
         internal static string donate_modal_text_dynamic = "";
         internal static string donate_modal_hint_dynamic = "";
         internal static string donate_update_dynamic = "";
+        private static int refreshInProgress;
 
         internal static void Refresh_Text()
         {
-            if (donate_modal_text_dynamic == "")
+            if (donate_modal_text_dynamic != "" || Interlocked.Exchange(ref refreshInProgress, 1) != 0)
+                return;
+
+            _ = RefreshTextAsync();
+        }
+
+        private static async Task RefreshTextAsync()
+        {
+            try
             {
-                _ = Get_Donate_Modal_Text();
+                await Get_Donate_Modal_Text();
+            }
+            catch (System.Exception e)
+            {
+                Plugin.Log.Warn($"Unable to load JDFixer donation text: {e.Message}");
+            }
+            finally
+            {
+                Volatile.Write(ref refreshInProgress, 0);
             }
         }
 
@@ -77,7 +95,7 @@ namespace JDFixer.UI
             int hint_start = reply_hint.IndexOf("[JDFIXER]");
             int hint_end = reply_hint.IndexOf("###", hint_start);
 
-            if (hint_start != -1)
+            if (hint_start != -1 && hint_end > hint_start + 9)
             {
                 //Plugin.Log.Debug("reply: " + reply_hint);
                 //Plugin.Log.Debug("start: " + hint_start + " end: " + hint_end);
@@ -86,7 +104,7 @@ namespace JDFixer.UI
 
             int update_start = reply_update.IndexOf("[JDFIXER]");
             int update_end = reply_update.IndexOf("###", update_start);
-            if (update_start != -1)
+            if (update_start != -1 && update_end > update_start + 9)
             {
                 donate_update_dynamic = reply_update.Substring(update_start + 9, update_end - update_start - 9);
             }

@@ -31,6 +31,7 @@ namespace JDFixer
         [OnEnable]
         public void OnApplicationStart()
         {
+            BeatmapOffsets.Retire_Snap_Preparation();
             //Plugin.Log.Debug("OnApplicationStart()");
             //game_version = IPA.Utilities.UnityGame.GameVersion.ToString();
             //Plugin.Log.Debug(game_version);
@@ -46,6 +47,7 @@ namespace JDFixer
         [OnDisable]
         public void OnApplicationQuit()
         {
+            BeatmapOffsets.Retire_Snap_Preparation();
             PluginConfig.Instance.Changed();
             harmony.UnpatchSelf();
         }

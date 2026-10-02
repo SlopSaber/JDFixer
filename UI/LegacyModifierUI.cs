@@ -29,6 +29,7 @@ namespace JDFixer.UI
 
         public void Dispose()
         {
+            BeatmapOffsets.Retire_Snap_Preparation();
             if (GameplaySetup.Instance != null)
             {
                 PluginConfig.Instance.Changed();
@@ -47,6 +48,7 @@ namespace JDFixer.UI
 
         public void BeatmapInfoUpdated(BeatmapInfo beatmapInfo)
         {
+            var preparation = PluginConfig.Instance.use_offset ? BeatmapOffsets.Prepare_Snap_Points(beatmapInfo) : null;
             _selectedBeatmap = beatmapInfo;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Map_Default_JD)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Map_Min_JD)));
@@ -62,8 +64,11 @@ namespace JDFixer.UI
                 //Plugin.Log.Debug("Map JD: " + _selectedBeatmap.JumpDistance + " " + _selectedBeatmap.MinJDSlider + " " + _selectedBeatmap.MaxJDSlider);
                 //Plugin.Log.Debug("Map RT: " + _selectedBeatmap.ReactionTime + " " + _selectedBeatmap.MinRTSlider + " " + _selectedBeatmap.MaxRTSlider);
 
-                BeatmapOffsets.Create_Snap_Points(ref BeatmapOffsets.JD_Snap_Points, ref BeatmapOffsets.JD_Offset_Points, _selectedBeatmap.Offset, _selectedBeatmap.JumpDistance, _selectedBeatmap.JDOffsetQuantum, _selectedBeatmap.MinJDSlider, _selectedBeatmap.MaxJDSlider);
-                BeatmapOffsets.Create_Snap_Points(ref BeatmapOffsets.RT_Snap_Points, ref BeatmapOffsets.RT_Offset_Points, _selectedBeatmap.Offset, _selectedBeatmap.ReactionTime, _selectedBeatmap.RTOffsetQuantum, _selectedBeatmap.MinRTSlider, _selectedBeatmap.MaxRTSlider);
+                if (preparation == null || !preparation.TryApply(_selectedBeatmap))
+                {
+                    BeatmapOffsets.Create_Snap_Points(ref BeatmapOffsets.JD_Snap_Points, ref BeatmapOffsets.JD_Offset_Points, _selectedBeatmap.Offset, _selectedBeatmap.JumpDistance, _selectedBeatmap.JDOffsetQuantum, _selectedBeatmap.MinJDSlider, _selectedBeatmap.MaxJDSlider);
+                    BeatmapOffsets.Create_Snap_Points(ref BeatmapOffsets.RT_Snap_Points, ref BeatmapOffsets.RT_Offset_Points, _selectedBeatmap.Offset, _selectedBeatmap.ReactionTime, _selectedBeatmap.RTOffsetQuantum, _selectedBeatmap.MinRTSlider, _selectedBeatmap.MaxRTSlider);
+                }
 
                 Refresh_BeatmapOffsets();
             }

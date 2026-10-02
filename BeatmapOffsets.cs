@@ -1,5 +1,10 @@
 ﻿using System.Collections.Generic;
 
+using System;
+using System.Globalization;
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace JDFixer
 {
     internal static class BeatmapOffsets
@@ -16,6 +21,171 @@ namespace JDFixer
 
         internal static string jd_offset_snap_value = "";
         internal static string rt_offset_snap_value = "";
+
+        private static readonly object PreparationGate = new object();
+        private static Task<SnapResult> preparationTask;
+        private static int preparationGeneration;
+
+        internal sealed class SnapResult
+        {
+            internal readonly List<float> JDPoints = new List<float>();
+            internal readonly List<string> JDOffsets = new List<string>();
+            internal readonly List<float> RTPoints = new List<float>();
+            internal readonly List<string> RTOffsets = new List<string>();
+        }
+
+        private sealed class SnapRequest
+        {
+            private readonly float offset, jd, jdStep, jdMin, jdMax, rt, rtStep, rtMin, rtMax, fraction;
+            private readonly CultureInfo culture;
+
+            internal SnapRequest(BeatmapInfo map, float fraction, CultureInfo culture)
+            {
+                offset = map.Offset;
+                jd = map.JumpDistance;
+                jdStep = map.JDOffsetQuantum;
+                jdMin = map.MinJDSlider;
+                jdMax = map.MaxJDSlider;
+                rt = map.ReactionTime;
+                rtStep = map.RTOffsetQuantum;
+                rtMin = map.MinRTSlider;
+                rtMax = map.MaxRTSlider;
+                this.fraction = fraction;
+                this.culture = CultureInfo.ReadOnly((CultureInfo)culture.Clone());
+            }
+
+            internal SnapResult Build()
+            {
+                var result = new SnapResult();
+                BuildPoints(result.JDPoints, result.JDOffsets, jd, jdStep, jdMin, jdMax);
+                BuildPoints(result.RTPoints, result.RTOffsets, rt, rtStep, rtMin, rtMax);
+                return result;
+            }
+
+            private void BuildPoints(List<float> points, List<string> offsets, float value, float step, float minimum, float maximum)
+            {
+                points.Add(value);
+                offsets.Add("( 0, " + offset.ToString("0.##", culture) + " )");
+                if (step <= 0f || float.IsNaN(step) || float.IsInfinity(step)) return;
+
+                for (int multiple = 1; multiple <= MaxSnapPointsPerDirection; multiple++)
+                {
+                    float point = value + multiple * step;
+                    if (point > maximum || point == points[points.Count - 1]) break;
+                    points.Add(point);
+                    offsets.Add(FormatOffset(multiple));
+                }
+
+                var lowerPoints = new List<float>();
+                var lowerOffsets = new List<string>();
+                for (int multiple = -1; multiple >= -MaxSnapPointsPerDirection; multiple--)
+                {
+                    float point = value + multiple * step;
+                    if (point < minimum || (lowerPoints.Count == 0 ? point == value : point == lowerPoints[lowerPoints.Count - 1])) break;
+                    lowerPoints.Add(point);
+                    lowerOffsets.Add(FormatOffset(multiple));
+                }
+                lowerPoints.Reverse();
+                lowerOffsets.Reverse();
+                points.InsertRange(0, lowerPoints);
+                offsets.InsertRange(0, lowerOffsets);
+            }
+
+            private string FormatOffset(int multiple)
+            {
+                return "( " + multiple.ToString(culture) + "/" + fraction.ToString(culture) + ", " +
+                    (offset + multiple / fraction).ToString("0.##", culture) + " )";
+            }
+        }
+
+        internal sealed class SnapPreparation
+        {
+            private readonly BeatmapInfo map;
+            private readonly CultureInfo culture;
+            private readonly float fraction;
+            private readonly int generation;
+            private readonly Task<SnapResult> task;
+
+            internal SnapPreparation(BeatmapInfo map, CultureInfo culture, float fraction, int generation, Task<SnapResult> task)
+            {
+                this.map = map;
+                this.culture = culture;
+                this.fraction = fraction;
+                this.generation = generation;
+                this.task = task;
+            }
+
+            internal bool TryApply(BeatmapInfo current)
+            {
+                if (!ReferenceEquals(map, current) || generation != preparationGeneration ||
+                    !ReferenceEquals(culture, CultureInfo.CurrentCulture) || fraction != PluginConfig.Instance.offset_fraction)
+                    return false;
+
+                SnapResult result;
+                try { result = task.GetAwaiter().GetResult(); }
+                catch { return false; }
+                if (result == null) return false;
+
+                JD_Snap_Points.Clear();
+                JD_Snap_Points.AddRange(result.JDPoints);
+                JD_Offset_Points.Clear();
+                JD_Offset_Points.AddRange(result.JDOffsets);
+                RT_Snap_Points.Clear();
+                RT_Snap_Points.AddRange(result.RTPoints);
+                RT_Offset_Points.Clear();
+                RT_Offset_Points.AddRange(result.RTOffsets);
+                return true;
+            }
+        }
+
+        internal static SnapPreparation Prepare_Snap_Points(BeatmapInfo map)
+        {
+            var culture = CultureInfo.CurrentCulture;
+            if (culture.GetType() != typeof(CultureInfo) || !culture.IsReadOnly || !culture.NumberFormat.IsReadOnly)
+                return null;
+            if (EstimatedPoints(map.JumpDistance, map.JDOffsetQuantum, map.MinJDSlider, map.MaxJDSlider) +
+                EstimatedPoints(map.ReactionTime, map.RTOffsetQuantum, map.MinRTSlider, map.MaxRTSlider) < 256f)
+                return null;
+
+            lock (PreparationGate)
+            {
+                if (preparationTask != null) return null;
+                var fraction = PluginConfig.Instance.offset_fraction;
+                var request = new SnapRequest(map, fraction, culture);
+                var task = Task.Factory.StartNew(request.Build, CancellationToken.None,
+                    TaskCreationOptions.None, TaskScheduler.Default);
+                preparationTask = task;
+                task.ContinueWith(ReleasePreparation, CancellationToken.None,
+                    TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                var result = task.ContinueWith(GetPreparedResult, CancellationToken.None,
+                    TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                return new SnapPreparation(map, culture, fraction, preparationGeneration, result);
+            }
+        }
+
+        private static float EstimatedPoints(float value, float step, float minimum, float maximum)
+        {
+            if (step <= 0f || float.IsNaN(step) || float.IsInfinity(step)) return 0f;
+            return Math.Min(2 * MaxSnapPointsPerDirection, Math.Max(0f, (maximum - value) / step) + Math.Max(0f, (value - minimum) / step));
+        }
+
+        private static void ReleasePreparation(Task<SnapResult> completed)
+        {
+            _ = completed.Exception;
+            lock (PreparationGate)
+                if (ReferenceEquals(preparationTask, completed)) preparationTask = null;
+        }
+
+        private static SnapResult GetPreparedResult(Task<SnapResult> completed)
+        {
+            try { return completed.GetAwaiter().GetResult(); }
+            catch { return null; }
+        }
+
+        internal static void Retire_Snap_Preparation()
+        {
+            preparationGeneration++;
+        }
 
 
         internal static void Create_Snap_Points(ref List<float> Snap_Points, ref List<string> Offset_Points, float _selectedBeatmap_Offset, float _selectedBeatmap_JD_RT, float _selectedBeatmap_UnitOffset, float _selectedBeatmap_MinSlider, float _selectedBeatmap_MaxSlider)
